@@ -2,9 +2,45 @@
 <html>
 <head>
     <title>Boomplay Uploader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 50px;
+        }
+        #drop-area {
+            border: 4px dashed #888;
+            padding: 40px;
+            border-radius: 20px;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+        #drop-area.highlight {
+            border-color: #007bff;
+        }
+        #file-list {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Welcome to Boomplay Uploader</h1>
-    <p>Drag & drop folder interface coming next...</p>
+    <h1>Boomplay Uploader</h1>
+    <p>Drag and drop a folder below</p>
+    <div id="drop-area">
+        <p>Drop your folder here</p>
+        <input type="file" id="fileElem" webkitdirectory directory multiple style="display:none">
+        <button onclick="document.getElementById('fileElem').click()">Browse Folder</button>
+    </div>
+    <div id="file-list"></div>
+
+    <script>
+        const fileInput = document.getElementById('fileElem');
+        const fileList = document.getElementById('file-list');
+
+        fileInput.addEventListener('change', (e) => {
+            const files = [...e.target.files];
+            fileList.innerHTML = '<h3>Files Detected:</h3><ul>' + files.map(file => `<li>${file.webkitRelativePath}</li>`).join('') + '</ul>';
+        });
+    </script>
 </body>
 </html>
