@@ -14,12 +14,41 @@
             border-radius: 20px;
             background: #f9f9f9;
             cursor: pointer;
+            transition: border-color 0.3s;
         }
         #drop-area.highlight {
             border-color: #007bff;
+            background: #e7f1ff;
         }
         #file-list {
             margin-top: 20px;
+            text-align: left;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .progress-bar {
+            width: 100%;
+            background: #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .progress {
+            height: 20px;
+            background: #007bff;
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        button {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
         }
     </style>
 </head>
@@ -32,15 +61,92 @@
         <button onclick="document.getElementById('fileElem').click()">Browse Folder</button>
     </div>
     <div id="file-list"></div>
+    <div id="progress-container" style="display: none;">
+        <p>Uploading files...</p>
+        <div class="progress-bar">
+            <div class="progress" id="progress-bar"></div>
+        </div>
+        <p id="status"></p>
+    </div>
 
     <script>
+        const dropArea = document.getElementById('drop-area');
         const fileInput = document.getElementById('fileElem');
         const fileList = document.getElementById('file-list');
+        const progressContainer = document.getElementById('progress-container');
+        const progressBar = document.getElementById('progress-bar');
+        const statusText = document.getElementById('status');
 
-        fileInput.addEventListener('change', (e) => {
-            const files = [...e.target.files];
-            fileList.innerHTML = '<h3>Files Detected:</h3><ul>' + files.map(file => `<li>${file.webkitRelativePath}</li>`).join('') + '</ul>';
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
         });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // Highlight drop area when dragging
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropArea.classList.add('highlight');
+        }
+
+        function unhighlight() {
+            dropArea.classList.remove('highlight');
+        }
+
+        // Handle dropped files
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        // Handle selected files (via button)
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+
+        // Process files and upload to Flask
+        function handleFiles(files) {
+            fileList.innerHTML = '<h3>Files Detected:</h3><ul>' + 
+                [...files].map(file => `<li>${file.webkitRelativePath}</li>`).join('') + '</ul>';
+
+            uploadFiles(files);
+        }
+
+        // Send files to Flask backend
+        function uploadFiles(files) {
+            progressContainer.style.display = 'block';
+            statusText.textContent = 'Preparing upload...';
+
+            const formData = new FormData();
+            [...files].forEach(file => formData.append('files', file));
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                progressBar.style.width = '100%';
+                statusText.textContent = 'Upload complete!';
+                fileList.innerHTML += `<p>✅ ${data.audio_files.length} audio files processed.</p>`;
+            })
+            .catch(error => {
+                statusText.textContent = 'Error: ' + error.message;
+            });
+        }
     </script>
 </body>
 </html>
